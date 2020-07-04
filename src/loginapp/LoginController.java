@@ -12,6 +12,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+import models.LoginModel;
 
 import java.io.IOException;
 import java.net.URL;
@@ -67,7 +68,7 @@ public class LoginController implements Initializable {
 
             Scene scene = new Scene(root);
             userStage.setScene(scene);
-            userStage.setTitle("Inventory Dashboard");
+//            userStage.setTitle("Inventory Dashboard");
             userStage.setResizable(false);
             userStage.show();
 
