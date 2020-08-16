@@ -15,13 +15,15 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import location_details.LocationDetailsController;
+import models.EquipmentDataLong;
 import models.EquipmentDataShort;
 import models.UnitDataShort;
 
-import java.awt.*;
 import java.io.*;
 import java.net.URL;
 import java.sql.*;
@@ -52,7 +54,7 @@ public class DashboardController implements Initializable {
     @FXML
     public TextField eq_invoiceNo;
     @FXML
-    public DatePicker dp_invoiceDate;
+    public TextField dp_invoiceDate;
     @FXML
     public TextField eq_name;
     @FXML
@@ -62,9 +64,9 @@ public class DashboardController implements Initializable {
     @FXML
     public TextField eq_localAgent;
     @FXML
-    public DatePicker dp_DOI;
+    public TextField dp_DOI;
     @FXML
-    public DatePicker dp_warranty;
+    public TextField dp_warranty;
     @FXML
     public TextField eq_location;
     @FXML
@@ -84,37 +86,50 @@ public class DashboardController implements Initializable {
     @FXML
     public TableColumn u_clm_eq_usability;
 
+    //------------------------------------------TAB3--------------------------
+    @FXML
+    public Tab tab3;
+    @FXML
+    public TableView disposable_equipments_table;
+    @FXML
+    public TableColumn t2_serialNo;
+    @FXML
+    public TableColumn t2_invoiceNo;
+    @FXML
+    public TableColumn t2_invoiceDate;
+    @FXML
+    public TableColumn t2_name;
+    @FXML
+    public TableColumn t2_make;
+    @FXML
+    public TableColumn t2_model;
+    @FXML
+    public TableColumn t2_DOI;
+    @FXML
+    public TableColumn t2_localAgent;
+    @FXML
+    public TableColumn t2_warranty;
+    @FXML
+    public TableColumn t2_location;
+
 
     private DatabaseConnection db;
     private ObservableList<EquipmentDataShort> eqDataShort;
+    private ObservableList<EquipmentDataLong> disposableEqDataLong;
     private ObservableList<UnitDataShort> unitData;
     private String selectEquipmentQuery = "SELECT Name, Make, Model, LAgent, Usable, COUNT (*) numOfElements FROM equipment_details GROUP BY Name,Make,Model,LAgent,Usable";
     private String checkEquipmentQuery = "SELECT COUNT(SerialNo) FROM equipment_details WHERE SerialNo=?";
     private String insertEquipmentQuery = "INSERT INTO equipment_details(SerialNo,InvoiceNo,InvoiceDate,Name,Make,Model,DoI,LAgent,Warranty,Location,Usable,Image) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)";
     private String selectUnitQuery = "SELECT Location, Usable, COUNT (*) numOfElements FROM equipment_details GROUP BY Location,Usable";
     private String deleteEquipmentQuery = "DELETE FROM equipment_details WHERE Name = ? AND Usable = ?";
+    private String selectDisposableEquipmentQuery = "SELECT * FROM equipment_details WHERE Usable = 'No'";
     private EquipmentDataShort eqRowData;
     private UnitDataShort unitRowData;
-
+    private Image image;
     private FileChooser fileChooser;
     private File file;
     private FileInputStream fis;
 
-    @FXML
-    void chooseFiles() throws FileNotFoundException {
-        CommonStageSingleton stageSingleton = CommonStageSingleton.getInstance();
-        Stage userStage = stageSingleton.getMainWindow();
-        fileChooser = new FileChooser();
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Image Files","*.jpg","*gif","*.jpeg","*.png")
-        );
-
-        file = fileChooser.showOpenDialog(userStage);
-        if(file != null){
-            fis = new FileInputStream(file);
-            ta_imagePath.setText(file.getAbsolutePath());
-        }
-    }
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
 
@@ -122,6 +137,7 @@ public class DashboardController implements Initializable {
         try {
             loadEquipmentData();
             loadUnitData();
+            loadDisposableEquipmentData();
         }catch(Exception e){
             System.out.println(e.toString());
         }
@@ -147,8 +163,8 @@ public class DashboardController implements Initializable {
                 if (event.getClickCount() == 1 && (! row.isEmpty()) ) {
                     System.out.println("Selected Item: "+unitRowData.getLocation());
                 }else if (event.getClickCount() == 2 && (! row.isEmpty()) ){
-                    System.out.println("Double click on: "+unitRowData.getLocation());
-//                    viewEquipmentDetails();
+                    System.out.println("Double click on: "+unitRowData.getLocation()+" "+ unitRowData.getUsability());
+                    viewLocationDetails(unitRowData.getLocation(), unitRowData.getUsability());
                 }
             });
             return row ;
@@ -156,6 +172,7 @@ public class DashboardController implements Initializable {
 
 
     }
+
 
     @FXML
     private void loadEquipmentData() throws SQLException {
@@ -209,21 +226,20 @@ public class DashboardController implements Initializable {
                 alert.setHeaderText(null);
                 alert.setContentText("The equipment you entered, already exists!");
                 Optional <ButtonType> action = alert.showAndWait();
-
             } else {
                 if(
-                    this.eq_serialNo.getText()==null ||
-                    this.eq_invoiceNo.getText()==null ||
-                    this.dp_invoiceDate.getValue()==null ||
-                    this.eq_name.getText()==null ||
-                    this.eq_make.getText()==null ||
-                    this.eq_model.getText()==null||
-                    this.dp_DOI.getValue()==null ||
-                    this.eq_localAgent.getText()==null ||
-                    this.dp_warranty.getValue()==null ||
-                    this.eq_location.getText()==null ||
-                    this.eq_isUsable.getText()==null ||
-                    this.file == null
+                        this.eq_serialNo.getText() == null ||
+                                this.eq_invoiceNo.getText() == null ||
+                                this.dp_invoiceDate.getText() == null ||
+                                this.eq_name.getText() == null ||
+                                this.eq_make.getText() == null ||
+                                this.eq_model.getText() == null ||
+                                this.dp_DOI.getText() == null ||
+                                this.eq_localAgent.getText() == null ||
+                                this.dp_warranty.getText() == null ||
+                                this.eq_location.getText() == null ||
+                                this.eq_isUsable.getText() == null ||
+                                this.file == null
                 ){
                     Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setTitle("Empty fields");
@@ -234,13 +250,13 @@ public class DashboardController implements Initializable {
                     PreparedStatement st = conn.prepareStatement(insertEquipmentQuery);
                     st.setString(1,this.eq_serialNo.getText());
                     st.setString(2,this.eq_invoiceNo.getText());
-                    st.setString(3,this.dp_invoiceDate.getValue().toString());
+                    st.setString(3,this.dp_invoiceDate.getText());
                     st.setString(4,this.eq_name.getText());
                     st.setString(5,this.eq_make.getText());
                     st.setString(6,this.eq_model.getText());
-                    st.setString(7,this.dp_DOI.getValue().toString());
+                    st.setString(7,this.dp_DOI.getText().toString());
                     st.setString(8,this.eq_localAgent.getText());
-                    st.setString(9,this.dp_warranty.getValue().toString());
+                    st.setString(9,this.dp_warranty.getText());
                     st.setString(10,this.eq_location.getText());
                     st.setString(11,this.eq_isUsable.getText());
                     st.setBinaryStream(12, fis, (int)file.length());
@@ -254,8 +270,27 @@ public class DashboardController implements Initializable {
 
         try {
             loadEquipmentData();
+            loadUnitData();;
+            loadDisposableEquipmentData();
         }catch(Exception e){
             System.out.println(e.toString());
+        }
+    }
+
+
+    @FXML
+    void chooseFiles() throws FileNotFoundException {
+        CommonStageSingleton stageSingleton = CommonStageSingleton.getInstance();
+        Stage userStage = stageSingleton.getMainWindow();
+        fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Image Files","*.jpg","*.jpeg","*.png")
+        );
+
+        file = fileChooser.showOpenDialog(userStage);
+        if(file != null){
+            fis = new FileInputStream(file);
+            ta_imagePath.setText(file.getAbsolutePath());
         }
     }
 
@@ -269,8 +304,8 @@ public class DashboardController implements Initializable {
         this.eq_localAgent.setText("");
         this.eq_location.setText("");
         this.eq_isUsable.setText("");
-        this.dp_DOI.setValue(null);
-        this.dp_warranty.setValue(null);
+        this.dp_DOI.setText("");
+        this.dp_warranty.setText("");
         this.fis = null;
         this.ta_imagePath.setText("");
 
@@ -309,7 +344,9 @@ public class DashboardController implements Initializable {
                 st.setString(2, eqRowData.getUsability());
                 st.execute();
                 loadEquipmentData();
-            } catch (SQLException e){
+                loadUnitData();;
+                loadDisposableEquipmentData();
+            } catch (Exception e){
                 System.out.println(e.toString());
             }
         }
@@ -342,20 +379,83 @@ public class DashboardController implements Initializable {
 
     }
 
-    private void viewUnitDetails(String unitName, String usability){
+
+    private void viewLocationDetails(String location, String usability){
         try{
             CommonStageSingleton stageSingleton = CommonStageSingleton.getInstance();
             Stage userStage = stageSingleton.getMainWindow();
             FXMLLoader loader = new FXMLLoader();
-            Pane equipmentScene = (Pane) loader.load(getClass().getResource("/equipment_details/EquipmentDetails.fxml").openStream());
-            EquipmentDetailsController controller = loader.getController();
-//            controller.initData(unitName, usability);
-            Scene scene = new Scene(equipmentScene);
+            Pane locationScene = (Pane) loader.load(getClass().getResource("/location_details/LocationDetails.fxml").openStream());
+            LocationDetailsController controller = loader.getController();
+            controller.initLocationData(location, usability);
+            Scene scene = new Scene(locationScene);
             userStage.setScene(scene);
             userStage.setResizable(false);
             userStage.show();
         } catch (IOException e){
-            System.out.println(e.toString());
+            e.printStackTrace();
         }
+    }
+
+    //------------------------------------------TAB3----------------------------
+    @FXML
+    private void loadDisposableEquipmentData() throws IOException {
+        try{
+            this.disposableEqDataLong = FXCollections.observableArrayList();
+            Connection conn = DatabaseConnection.getConnection();
+            PreparedStatement checkStmt = conn.prepareStatement(selectDisposableEquipmentQuery);
+            ResultSet rs = checkStmt.executeQuery();
+
+            while(rs.next()){
+                this.disposableEqDataLong.add(
+                        new EquipmentDataLong(
+                                rs.getString(1),
+                                rs.getString(2),
+                                rs.getString(3),
+                                rs.getString(4),
+                                rs.getString(5),
+                                rs.getString(6),
+                                rs.getString(7),
+                                rs.getString(8),
+                                rs.getString(9),
+                                rs.getString(10),
+                                rs.getString(11)
+                        )
+                );
+
+//                InputStream is = rs.getBinaryStream("Image");
+//                FileOutputStream os = new FileOutputStream(new File("disposableEqImage.jpg"));
+//                byte[] content = new byte[1024];
+//                int size = 0;
+//                while ((size = is.read(content)) != -1){
+//                    os.write(content, 0, size);
+//                }
+//                os.close();
+//                is.close();
+//
+//                File file = new File("disposableEqImage.jpg");
+//                image = new Image(file.toURI().toString());
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error: "+ e);
+            e.printStackTrace();
+        }
+
+        this.t2_serialNo.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("serialNo"));
+        this.t2_invoiceNo.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("invoiceNo"));
+        this.t2_invoiceDate.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("invoiceDate"));
+        this.t2_name.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("name"));
+        this.t2_make.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("make"));
+        this.t2_model.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("model"));
+        this.t2_DOI.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("DOI"));
+        this.t2_localAgent.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("localAgent"));
+        this.t2_warranty.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("warranty"));
+        this.t2_location.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("location"));
+
+
+        this.disposable_equipments_table.setItems(null);
+        this.disposable_equipments_table.setItems(this.disposableEqDataLong);
+
     }
 }

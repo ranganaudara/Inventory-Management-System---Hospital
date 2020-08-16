@@ -2,6 +2,7 @@ package equipment_details;
 
 import common_stage.CommonStageSingleton;
 import db_utils.DatabaseConnection;
+import edit_equipment.EditEquipmentController;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
@@ -9,15 +10,14 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import models.EquipmentDataLong;
+import models.EquipmentDataShort;
 import models.LocationData;
 
 import javax.imageio.ImageIO;
@@ -76,30 +76,23 @@ public class EquipmentDetailsController implements Initializable {
     private String equipmentMake;
     private String equipmentModel;
     private Image image;
+    private EquipmentDataLong eqRowData;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         this.db = new DatabaseConnection();
 
-    }
+        details_table.setRowFactory(tv -> {
+            TableRow<EquipmentDataLong> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                eqRowData = row.getItem();
+                if (event.getClickCount() == 1 && (! row.isEmpty()) ) {
+                    System.out.println("Selected Item: "+eqRowData.getName());
+                }
+            });
+            return row ;
+        });
 
-    @FXML
-    private void goBack(){
-        try{
-            CommonStageSingleton stageSingleton = CommonStageSingleton.getInstance();
-            Stage userStage = stageSingleton.getMainWindow();
-            FXMLLoader loader = new FXMLLoader();
-            Pane dashboardScene = (Pane) loader.load(getClass().getResource("/dashboard/Dashboard.fxml").openStream());
-
-
-            Scene scene = new Scene(dashboardScene);
-            userStage.setScene(scene);
-            userStage.setResizable(false);
-            userStage.show();
-        } catch (IOException e){
-            System.out.println(e.toString());
-            e.printStackTrace();
-        }
     }
 
     public void initData(String name, String make, String model){
@@ -169,18 +162,6 @@ public class EquipmentDetailsController implements Initializable {
             fnf.printStackTrace();
         }
 
-
-//        BufferedImage bufferedImage = null;
-//        try {
-//            bufferedImage = ImageIO.read(new File("src/image.png"));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        Image image = SwingFXUtils.toFXImage(bufferedImage, null);
-//        this.eq_img.setImage(image);
-
-
-
         this.t2_serialNo.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("serialNo"));
         this.t2_invoiceNo.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("invoiceNo"));
         this.t2_invoiceDate.setCellValueFactory(new PropertyValueFactory<EquipmentDataLong, String>("invoiceDate"));
@@ -230,6 +211,53 @@ public class EquipmentDetailsController implements Initializable {
         this.location_table.setItems(null);
         this.location_table.setItems(this.locationData);
 
+    }
+
+    @FXML
+    private void editEquipmentDetails(){
+
+        if(eqRowData == null){
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("No Selected Equipment");
+            alert.setHeaderText(null);
+            alert.setContentText("First, you have to select an equipment to edit! Select equipment from the bottom table.");
+            alert.showAndWait();
+        } else {
+            try{
+                CommonStageSingleton stageSingleton = CommonStageSingleton.getInstance();
+                Stage userStage = stageSingleton.getMainWindow();
+                FXMLLoader loader = new FXMLLoader();
+                Pane EditEquipmentScene = (Pane) loader.load(getClass().getResource("/edit_equipment/EditEquipment.fxml").openStream());
+                EditEquipmentController controller = loader.getController();
+                controller.initData(eqRowData, "equipmentDetails");
+                Scene scene = new Scene(EditEquipmentScene);
+                userStage.setScene(scene);
+                userStage.setResizable(false);
+                userStage.show();
+            } catch (IOException e){
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    @FXML
+    private void goBack(){
+        try{
+            CommonStageSingleton stageSingleton = CommonStageSingleton.getInstance();
+            Stage userStage = stageSingleton.getMainWindow();
+            FXMLLoader loader = new FXMLLoader();
+            Pane dashboardScene = (Pane) loader.load(getClass().getResource("/dashboard/Dashboard.fxml").openStream());
+
+
+            Scene scene = new Scene(dashboardScene);
+            userStage.setScene(scene);
+            userStage.setResizable(false);
+            userStage.show();
+        } catch (IOException e){
+            System.out.println(e.toString());
+            e.printStackTrace();
+        }
     }
 
 }
